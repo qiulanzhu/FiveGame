@@ -1,6 +1,7 @@
 import {ResourceLoader} from "./js/base/ResourceLoader.js";
 import {DataStore} from "./js/base/DataStore.js";
 import {BackGround} from "./runtime/BackGround.js";
+import {Pieces} from "./runtime/Pieces.js";
 
 export default class Main {
    constructor() {
@@ -29,6 +30,9 @@ export default class Main {
       this.dataStore.res = map;
 
       this.dataStore.put('background', new BackGround());
+      this.dataStore.put('blackPiece', new Pieces('blackPiece'));
+      this.dataStore.put('whitePiece', new Pieces('whitePiece'));
+
       this.dataStore.get('background').draw();
 
       this.start();
@@ -123,14 +127,17 @@ export default class Main {
    }
 
    clickChessPiece(chess, chessBoard, i, j, flag, color) {
+      let spritePiece = null;
       let image = null;
       if (color === 'white') {
-         image = this.dataStore.res.get("whitePiece");
+         spritePiece = this.dataStore.get('whitePiece');
+         image = this.dataStore.res.get('whitePiece');
       } else {
-         image = this.dataStore.res.get("blackPiece");
+         spritePiece = this.dataStore.get('blackPiece');
+         image = this.dataStore.res.get('blackPiece');
       }
 
-      this.ctx.drawImage(
+      spritePiece.draw(
         image,
         0,
         0,
@@ -321,7 +328,7 @@ export default class Main {
          }
 
          //落子
-         // this.clickChessPiece(chess, chessBoard, i, j, 1, 'black');
+         this.clickChessPiece(chess, chessBoard, i, j, 1, 'black');
 
          //console.log(chessBoard);
 

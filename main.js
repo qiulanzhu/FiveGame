@@ -5,7 +5,6 @@ import {Pieces} from "./runtime/Pieces.js";
 
 export default class Main {
    constructor() {
-      this.num = 0;
       this.width_first_position = 13;
       this.height_first_position = 300;
       this.width_height_grid = 25;
@@ -15,8 +14,8 @@ export default class Main {
       this.dataStore = DataStore.getInstance();
       this.ctx = this.canvas.getContext('2d');
 
-      // this.ctx.fillStyle = 'yellow';
-      // this.ctx.fillRect(0, 0, 375, 667);
+      this.offCanvas = wx.createCanvas();
+      this.offCtx = this.offCanvas.getContext('2d');
 
       const loader = ResourceLoader.create();
       loader.onLoaded(map => this.onResourceFirstLoaded(map));
@@ -27,19 +26,24 @@ export default class Main {
    onResourceFirstLoaded(map) {
       this.dataStore.canvas = this.canvas;
       this.dataStore.ctx = this.ctx;
+
+      this.dataStore.offCanvas = this.offCanvas;
+      this.dataStore.offCtx = this.offCtx;
+
       this.dataStore.res = map;
 
       this.dataStore.put('background', new BackGround());
       this.dataStore.put('blackPiece', new Pieces('blackPiece'));
       this.dataStore.put('whitePiece', new Pieces('whitePiece'));
 
+      this.dataStore.get('background').offDraw();
       this.dataStore.get('background').draw();
 
       this.start();
    }
 
-   painChess() {
-      let context = this.ctx;
+   painChess(screenContext) {
+      let context = screenContext;
       context.strokeStyle = '#686868';
       context.beginPath();
 
@@ -137,7 +141,7 @@ export default class Main {
          image = this.dataStore.res.get('blackPiece');
       }
 
-      spritePiece.draw(
+      spritePiece.offDraw(
         image,
         0,
         0,
@@ -148,6 +152,8 @@ export default class Main {
         image.width * 0.7,
         image.height * 0.7
       );
+
+      this.ctx.drawImage(this.offCanvas, 0, 0);
 
       chessBoard[i][j] = flag;
    }
@@ -284,33 +290,7 @@ export default class Main {
       }
    }
 
-   start() {
-      // document.body.innerHTML = '<canvas id="chess" width="375" height="667"></canvas>';
-      // let chess = document.getElementById('chess');
-      let chess = this.canvas;
-
-      let chessBoard = [];
-
-      //赢法数组
-      let wins = [];
-
-      //一共有多少种赢法
-      let count = 0;
-
-      //赢法统计数组
-      let myWin = [];
-
-      //电脑的赢法数组
-      let computerWin = [];
-
-      // 绘制棋盘
-      this.painChess();
-
-      // 初始化核心数据
-      count = this.initChess(chessBoard, wins, myWin, computerWin);
-
-
-      // 玩家落子
+   listenTouch(chess, chessBoard, wins, myWin, computerWin, count){
       wx.onTouchStart((e) => {
          console.log(e.touches);
          console.log(e.touches[0]['clientX']);
@@ -326,6 +306,9 @@ export default class Main {
             //alert('哥们那有字了')
             return;
          }
+
+         //离屏显示到主屏
+         this.ctx.drawImage(this.offCanvas, 0, 0);
 
          //落子
          this.clickChessPiece(chess, chessBoard, i, j, 1, 'black');
@@ -346,6 +329,47 @@ export default class Main {
 
          this.computerAI(chess, chessBoard, wins, myWin, computerWin, count);
       });
+   }
+
+   listenShow(){
+      wx.onShow(res => { //这里并非运行在主线程,如果在这里写绘制的代码,就会发生灵异事件,正确的写法是
+         setTimeout( () => {
+            this.start();
+         }, 500)})
+   }
+
+   start() {
+      // document.body.innerHTML = '<canvas id="chess" width="375" height="667"></canvas>';
+      // let chess = document.getElementById('chess');
+      let chess = this.canvas;
+
+      let chessBoard = [];
+
+      //赢法数组
+      let wins = [];
+
+      //一共有多少种赢法
+      let count = 0;
+
+      //赢法统计数组
+      let myWin = [];
+
+      //电脑的赢法数组
+      let computerWin = [];
+
+      // 绘制棋盘
+      this.painChess(this.ctx);
+      this.painChess(this.offCtx);
+
+      // 初始化核心数据
+      count = this.initChess(chessBoard, wins, myWin, computerWin);
+
+
+      // 监听触摸事件
+      this.listenTouch(chess, chessBoard, wins, myWin, computerWin, count);
+
+      // 监听小游戏从后台切换到前台的事件
+      // this.listenShow();
    }
 }
 

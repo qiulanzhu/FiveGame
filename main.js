@@ -5,22 +5,35 @@ import {Pieces} from "./runtime/Pieces.js";
 
 export default class Main {
    constructor() {
+      // 棋盘画线参数
       this.width_first_position = 13;
       this.height_first_position = 300;
       this.width_height_grid = 25;
       this.width_height_chess = 350;
 
-      this.canvas = wx.createCanvas();
+      // 总的数据存储
       this.dataStore = DataStore.getInstance();
-      this.ctx = this.canvas.getContext('2d');
 
+      // 主屏和离屏
+      this.canvas = wx.createCanvas();
+      this.ctx = this.canvas.getContext('2d');
       this.offCanvas = wx.createCanvas();
       this.offCtx = this.offCanvas.getContext('2d');
 
+      // 棋盘是否放子
+      // 赢法数组
+      // 一共有多少种赢法
+      // 赢法统计数组
+      // 电脑的赢法数组
+      this.chessBoard = [];
+      this.wins = [];
+      this.count = 0;
+      this.myWin = [];
+      this.computerWin = [];
+
+      // 资源加载
       const loader = ResourceLoader.create();
       loader.onLoaded(map => this.onResourceFirstLoaded(map));
-
-
    }
 
    onResourceFirstLoaded(map) {
@@ -35,9 +48,8 @@ export default class Main {
       this.dataStore.put('background', new BackGround());
       this.dataStore.put('blackPiece', new Pieces('blackPiece'));
       this.dataStore.put('whitePiece', new Pieces('whitePiece'));
-
-      this.dataStore.get('background').offDraw();
-      this.dataStore.get('background').draw();
+      this.dataStore.put('blackWin', new Pieces('blackWin'));
+      this.dataStore.put('whiteWin', new Pieces('whiteWin'));
 
       this.start();
    }
@@ -58,29 +70,29 @@ export default class Main {
       }
    }
 
-   initChess(chessBoard, wins, myWin, computerWin) {
+   initChess() {
       let count = 0;
 
       //数组显示棋盘
       for (let i = 0; i < 15; i++) {
-         chessBoard[i] = [];
+         this.chessBoard[i] = [];
          for (let j = 0; j < 15; j++) {
-            chessBoard[i][j] = 0;
+            this.chessBoard[i][j] = 0;
          }
       }
 
       //初始化一下赢法数组
       for (let i = 0; i < 15; i++) {
-         wins[i] = [];
+         this.wins[i] = [];
          for (let j = 0; j < 15; j++) {
-            wins[i][j] = [];
+            this.wins[i][j] = [];
          }
       }
 
       for (let i = 14; i >= 4; i--) {// 斜着赢的/
          for (let j = 0; j < 11; j++) {
             for (let k = 0; k < 5; k++) {
-               wins[i - k][j + k][count] = true
+               this.wins[i - k][j + k][count] = true
             }
             count++;
          }
@@ -90,7 +102,7 @@ export default class Main {
       for (let i = 0; i < 11; i++) {// 斜着赢的\
          for (let j = 0; j < 11; j++) {
             for (let k = 0; k < 5; k++) {
-               wins[i + k][j + k][count] = true;
+               this.wins[i + k][j + k][count] = true;
             }
             count++;
          }
@@ -100,7 +112,7 @@ export default class Main {
       for (let i = 0; i < 11; i++) {//计算竖着的
          for (let j = 0; j < 15; j++) {
             for (let k = 0; k < 5; k++) {
-               wins[i + k][j][count] = true;
+               this.wins[i + k][j][count] = true;
             }
             count++;
          }
@@ -111,7 +123,7 @@ export default class Main {
          for (let j = 0; j < 11; j++) {
             for (let k = 0; k < 5; k++) {
                //console.log(wins)
-               wins[i][j + k][count] = true;
+               this.wins[i][j + k][count] = true;
                //0 -10
             }
             count++;
@@ -122,15 +134,15 @@ export default class Main {
       //console.log(count);
 
       for (let i = 0; i < count; i++) {
-         myWin[i] = 0;
-         computerWin[i] = 0;
+         this.myWin[i] = 0;
+         this.computerWin[i] = 0;
       }
       //console.log(chessBoard);
 
       return count;
    }
 
-   clickChessPiece(chess, chessBoard, i, j, flag, color) {
+   clickChessPiece(i, j, flag, color) {
       let spritePiece = null;
       let image = null;
       if (color === 'white') {
@@ -155,10 +167,10 @@ export default class Main {
 
       this.ctx.drawImage(this.offCanvas, 0, 0);
 
-      chessBoard[i][j] = flag;
+      this.chessBoard[i][j] = flag;
    }
 
-   clickChessPieceOld(chess, chessBoard, i, j, flag, first_color, second_color) {
+   clickChessPieceOld(i, j, flag, first_color, second_color) {
       // console.log(i, j);
       let context = this.ctx;
       context.beginPath();
@@ -185,10 +197,10 @@ export default class Main {
       context.fill();
       context.stroke();
 
-      chessBoard[i][j] = flag;
+      this.chessBoard[i][j] = flag;
    }
 
-   computerAI(chess, chessBoard, wins, myWin, computerWin, count) {
+   computerAI() {
       let myScore = [];
       let computerScore = [];
 
@@ -206,10 +218,10 @@ export default class Main {
 
       for (let i = 0; i < 15; i++) {
          for (let j = 0; j < 15; j++) {
-            if (chessBoard[i][j] === 0) {
-               for (let k = 0; k < count; k++) {
-                  if (wins[i][j][k]) {
-                     switch (myWin[k]) {
+            if (this.chessBoard[i][j] === 0) {
+               for (let k = 0; k < this.count; k++) {
+                  if (this.wins[i][j][k]) {
+                     switch (this.myWin[k]) {
                         case 1:
                            myScore[i][j] += 200;
                            break;
@@ -224,7 +236,7 @@ export default class Main {
                            break;
                      }
 
-                     switch (computerWin[k]) {
+                     switch (this.computerWin[k]) {
                         case 1 :
                            computerScore[i][j] += 220;
                            break;
@@ -277,20 +289,21 @@ export default class Main {
       console.log(u, v);
 
       //落子
-      this.clickChessPiece(chess, chessBoard, u, v, 2, 'white');
+      this.clickChessPiece(u, v, 2, 'white');
 
 
-      for (let k = 0; k < count; k++) {
-         if (wins[u][v][k]) {
-            computerWin[k]++;
-            if (computerWin[k] === 5) {
+      for (let k = 0; k < this.count; k++) {
+         if (this.wins[u][v][k]) {
+            this.computerWin[k]++;
+            if (this.computerWin[k] === 5) {
+               this.dataStore.get('whiteWin').draw();
                console.log('电脑赢了');
             }
          }
       }
    }
 
-   listenTouch(chess, chessBoard, wins, myWin, computerWin, count){
+   listenTouch(){
       wx.onTouchStart((e) => {
          console.log(e.touches);
          console.log(e.touches[0]['clientX']);
@@ -302,7 +315,7 @@ export default class Main {
          let i = Math.floor((client_x - this.width_first_position + this.width_height_grid / 2) / this.width_height_grid);
          let j = Math.floor((client_y - this.height_first_position + this.width_height_grid / 2) / this.width_height_grid);
          console.log(i, j);
-         if (chessBoard[i][j] === 1) {
+         if (this.chessBoard[i][j] === 1) {
             //alert('哥们那有字了')
             return;
          }
@@ -311,15 +324,16 @@ export default class Main {
          this.ctx.drawImage(this.offCanvas, 0, 0);
 
          //落子
-         this.clickChessPiece(chess, chessBoard, i, j, 1, 'black');
+         this.clickChessPiece(i, j, 1, 'black');
 
          //console.log(chessBoard);
 
-         for (let k = 0; k < count; k++) {
-            if (wins[i][j][k]) {
-               myWin[k]++;
+         for (let k = 0; k < this.count; k++) {
+            if (this.wins[i][j][k]) {
+               this.myWin[k]++;
             }
-            if (myWin[k] === 5) {
+            if (this.myWin[k] === 5) {
+               this.dataStore.get('blackWin').draw();
                console.log('你真厉害了～')
             }
             //myWin[k]++;
@@ -327,49 +341,38 @@ export default class Main {
          }
          //console.log(myWin)
 
-         this.computerAI(chess, chessBoard, wins, myWin, computerWin, count);
+         this.computerAI();
       });
    }
 
    listenShow(){
-      wx.onShow(res => { //这里并非运行在主线程,如果在这里写绘制的代码,就会发生灵异事件,正确的写法是
-         setTimeout( () => {
-            this.start();
-         }, 500)})
+      wx.onShow(res => {
+         this.ctx.drawImage(this.offCanvas, 0, 0);
+      })
    }
 
-   start() {
-      // document.body.innerHTML = '<canvas id="chess" width="375" height="667"></canvas>';
-      // let chess = document.getElementById('chess');
-      let chess = this.canvas;
-
-      let chessBoard = [];
-
-      //赢法数组
-      let wins = [];
-
-      //一共有多少种赢法
-      let count = 0;
-
-      //赢法统计数组
-      let myWin = [];
-
-      //电脑的赢法数组
-      let computerWin = [];
+   initLayout(){
+      // 添加背景图
+      this.dataStore.get('background').offDraw();
+      this.dataStore.get('background').draw();
 
       // 绘制棋盘
       this.painChess(this.ctx);
       this.painChess(this.offCtx);
+   }
+
+   start() {
+      // 初始化布局
+      this.initLayout();
 
       // 初始化核心数据
-      count = this.initChess(chessBoard, wins, myWin, computerWin);
-
+      this.count = this.initChess();
 
       // 监听触摸事件
-      this.listenTouch(chess, chessBoard, wins, myWin, computerWin, count);
+      this.listenTouch();
 
       // 监听小游戏从后台切换到前台的事件
-      // this.listenShow();
+      this.listenShow();
    }
 }
 

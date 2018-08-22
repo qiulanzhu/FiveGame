@@ -1,5 +1,7 @@
 export const Resources = [
    ['background', 'res/background.png'],
    ['blackPiece', 'res/black.png'],
-   ['whitePiece', 'res/white.png']
+   ['whitePiece', 'res/white.png'],
+   ['whiteWin', 'res/whiteWin.png'],
+   ['blackWin', 'res/blackWin.png']
 ];

@@ -82,4 +82,38 @@ export class Sprite {
         height
       );
    }
+
+   offAndMainDraw(img = this.img,
+        srcX = this.srcX,
+        srcY = this.srcY,
+        srcW = this.srcW,
+        srcH = this.srcH,
+        x = this.x,
+        y = this.y,
+        width = this.width,
+        height = this.height) {
+      this.draw(
+        img,
+        srcX,
+        srcY,
+        srcW,
+        srcH,
+        x,
+        y,
+        width,
+        height
+      );
+
+      this.offDraw(
+        img,
+        srcX,
+        srcY,
+        srcW,
+        srcH,
+        x,
+        y,
+        width,
+        height
+      );
+   }
 }

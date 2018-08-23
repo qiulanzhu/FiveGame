@@ -1,15 +1,15 @@
 import {ResourceLoader} from "./js/base/ResourceLoader.js";
 import {DataStore} from "./js/base/DataStore.js";
 import {BackGround} from "./runtime/BackGround.js";
-import {Pieces} from "./runtime/Pieces.js";
+import {ImageSprite} from "./runtime/ImageSprite.js";
 
 export default class Main {
    constructor() {
       // 棋盘画线参数
-      this.width_first_position = 13;
-      this.height_first_position = 300;
-      this.width_height_grid = 25;
-      this.width_height_chess = 350;
+      this.width_first_position = 20;
+      this.height_first_position = 200;
+      this.width_height_grid = 23;
+      this.width_height_chess = 14 * this.width_height_grid;
 
       // 总的数据存储
       this.dataStore = DataStore.getInstance();
@@ -46,10 +46,11 @@ export default class Main {
       this.dataStore.res = map;
 
       this.dataStore.put('background', new BackGround());
-      this.dataStore.put('blackPiece', new Pieces('blackPiece'));
-      this.dataStore.put('whitePiece', new Pieces('whitePiece'));
-      this.dataStore.put('blackWin', new Pieces('blackWin'));
-      this.dataStore.put('whiteWin', new Pieces('whiteWin'));
+      this.dataStore.put('blackPiece', new ImageSprite('blackPiece'));
+      this.dataStore.put('whitePiece', new ImageSprite('whitePiece'));
+      this.dataStore.put('blackWin', new ImageSprite('blackWin'));
+      this.dataStore.put('whiteWin', new ImageSprite('whiteWin'));
+      this.dataStore.put('fiveChess', new ImageSprite('fiveChess'));
 
       this.start();
    }
@@ -66,6 +67,22 @@ export default class Main {
 
          context.moveTo(this.width_first_position + i * this.width_height_grid, this.height_first_position);
          context.lineTo(this.width_first_position + i * this.width_height_grid, this.height_first_position + this.width_height_chess);
+         context.stroke();
+      }
+   }
+
+   painRedRim(screenContext, x, y, width, height){
+      let context = screenContext;
+      context.strokeStyle = '#ff0000';
+      context.beginPath();
+
+
+      for (let i = 0; i < 15; i++) {
+         context.moveTo(x, y);
+         context.lineTo(x + width, y);
+         context.lineTo(x + width, y + height);
+         context.lineTo(x , y + height);
+         context.lineTo(x , y);
          context.stroke();
       }
    }
@@ -167,6 +184,14 @@ export default class Main {
 
       this.ctx.drawImage(this.offCanvas, 0, 0);
 
+      this.painRedRim(
+        this.ctx,
+        this.width_first_position + i * this.width_height_grid - this.width_height_grid / 2.1,
+        this.height_first_position + j * this.width_height_grid - this.width_height_grid / 2.1,
+        image.width * 0.7,
+        image.height * 0.7
+      );
+
       this.chessBoard[i][j] = flag;
    }
 
@@ -221,34 +246,39 @@ export default class Main {
             if (this.chessBoard[i][j] === 0) {
                for (let k = 0; k < this.count; k++) {
                   if (this.wins[i][j][k]) {
-                     switch (this.myWin[k]) {
-                        case 1:
-                           myScore[i][j] += 200;
-                           break;
-                        case 2:
-                           myScore[i][j] += 500;
-                           break;
-                        case 3:
-                           myScore[i][j] += 2000;
-                           break;
-                        case 4:
-                           myScore[i][j] += 10000;
-                           break;
+
+                     if(this.myWin[k] !== 0 && this.computerWin[k] === 0){
+                        switch (this.myWin[k]) {
+                           case 1:
+                              myScore[i][j] += 100;
+                              break;
+                           case 2:
+                              myScore[i][j] += 1500;
+                              break;
+                           case 3:
+                              myScore[i][j] += 3000;
+                              break;
+                           case 4:
+                              myScore[i][j] += 100000;
+                              break;
+                        }
                      }
 
-                     switch (this.computerWin[k]) {
-                        case 1 :
-                           computerScore[i][j] += 220;
-                           break;
-                        case 2 :
-                           computerScore[i][j] += 520;
-                           break;
-                        case 3:
-                           computerScore[i][j] += 2200;
-                           break;
-                        case 4:
-                           computerScore[i][j] += 20000;
-                           break;
+                     if(this.computerWin[k] !== 0 &&  this.myWin[k] === 0){
+                        switch (this.computerWin[k]) {
+                           case 1 :
+                              computerScore[i][j] += 102;
+                              break;
+                           case 2 :
+                              computerScore[i][j] += 1520;
+                              break;
+                           case 3:
+                              computerScore[i][j] += 20000;
+                              break;
+                           case 4:
+                              computerScore[i][j] += 100000;
+                              break;
+                        }
                      }
                   }
 
@@ -296,8 +326,24 @@ export default class Main {
          if (this.wins[u][v][k]) {
             this.computerWin[k]++;
             if (this.computerWin[k] === 5) {
-               this.dataStore.get('whiteWin').draw();
+               // this.dataStore.get('whiteWin').draw();
                console.log('电脑赢了');
+
+               wx.showModal({
+                  title: '游戏结束!',
+                  content: 'AI WIN!',
+                  showCancel: false,
+                  cancelText: '取消',
+                  cancelColor: '#000000',
+                  confirmText: '再来一局',
+                  confirmColor: '#3cc51f',
+                  success: (e) => {
+                     this.start();
+                  },
+                  fail: (e) => {
+                     this.start();
+                  }
+               })
             }
          }
       }
@@ -315,13 +361,16 @@ export default class Main {
          let i = Math.floor((client_x - this.width_first_position + this.width_height_grid / 2) / this.width_height_grid);
          let j = Math.floor((client_y - this.height_first_position + this.width_height_grid / 2) / this.width_height_grid);
          console.log(i, j);
-         if (this.chessBoard[i][j] === 1) {
-            //alert('哥们那有字了')
+
+         // 边界判断
+         if(i < 0 || i > 14 || j < 0 || j >　14){
             return;
          }
 
-         //离屏显示到主屏
-         this.ctx.drawImage(this.offCanvas, 0, 0);
+         // 判断是否下过子
+         if (this.chessBoard[i][j] === 1) {
+            return;
+         }
 
          //落子
          this.clickChessPiece(i, j, 1, 'black');
@@ -333,8 +382,25 @@ export default class Main {
                this.myWin[k]++;
             }
             if (this.myWin[k] === 5) {
-               this.dataStore.get('blackWin').draw();
-               console.log('你真厉害了～')
+               // this.dataStore.get('blackWin').offDraw();
+               // this.ctx.drawImage(this.offCanvas, 0, 0);
+               console.log('你真厉害了～');
+
+               wx.showModal({
+                  title: '游戏结束!',
+                  content: '大侠，你赢啦！',
+                  showCancel: false,
+                  cancelText: '取消',
+                  cancelColor: '#000000',
+                  confirmText: '再来一局',
+                  confirmColor: '#3cc51f',
+                  success: (e) => {
+                     this.start();
+                  },
+                  fail: (e) => {
+                     this.start();
+                  }
+               })
             }
             //myWin[k]++;
 
@@ -353,8 +419,21 @@ export default class Main {
 
    initLayout(){
       // 添加背景图
-      this.dataStore.get('background').offDraw();
-      this.dataStore.get('background').draw();
+      this.dataStore.get('background').offAndMainDraw();
+
+      // 添加棋盘图
+      let image = this.dataStore.res.get('fiveChess');
+      this.dataStore.get('fiveChess').offAndMainDraw(
+        image,
+        0,
+        0,
+        image.width,
+        image.height,
+        5,
+        this.height_first_position - 25,
+        this.canvas.width - 10,
+        this.canvas.width + this.width_height_grid/2
+      );
 
       // 绘制棋盘
       this.painChess(this.ctx);
